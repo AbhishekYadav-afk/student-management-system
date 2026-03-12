@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NGO Master Management System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- CSS VARIABLES & RESET --- */
+        :root {
+            --primary: #27ae60;
+            --dark: #2c3e50;
+            --light: #f4f6f9;
+            --accent: #2980b9;
+            --danger: #c0392b;
+            --gold: #f1c40f;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--light); height: 100vh; display: flex; overflow: hidden; }
+
+        /* --- AUTH SCREEN --- */
+        #auth-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--dark); z-index: 999; display: flex; justify-content: center; align-items: center;
+        }
+        .auth-box { background: white; padding: 40px; border-radius: 8px; width: 350px; text-align: center; }
+        .auth-box input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
+        .auth-box button { width: 100%; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .toggle-link { color: var(--accent); cursor: pointer; display: block; margin-top: 15px; font-size: 0.9rem; text-decoration: underline; }
+
+        /* --- SIDEBAR --- */
+        .sidebar { width: 260px; background: var(--dark); color: white; display: flex; flex-direction: column; }
+        .brand { padding: 20px; font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid #34495e; text-align: center; background: #1a252f; letter-spacing: 1px;}
+        .menu { flex: 1; overflow-y: auto; padding-top: 10px; }
+        .menu button {
+            width: 100%; background: none; border: none; color: #bdc3c7; padding: 15px 20px; text-align: left;
+            cursor: pointer; transition: 0.3s; font-size: 0.95rem; border-left: 4px solid transparent;
+        }
+        .menu button:hover, .menu button.active { background: #34495e; color: white; border-left: 4px solid var(--primary); }
+
+        /* --- MAIN CONTENT --- */
+        .main { flex: 1; overflow-y: auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
+
+        /* --- HOME PAGE ENHANCEMENTS --- */
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
+            background-size: cover; background-position: center;
+            color: white; padding: 80px 40px; border-radius: 10px; text-align: center; margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .hero h1 { font-size: 3.5rem; margin-bottom: 15px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .hero p { font-size: 1.2rem; max-width: 600px; margin: 0 auto; line-height: 1.6; color: #eee; }
+
+        /* About Section */
+        .about-section { display: flex; gap: 30px; align-items: center; margin-bottom: 30px; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .about-content { flex: 1; }
+        .about-content h3 { color: var(--dark); font-size: 1.8rem; margin-bottom: 15px; border-bottom: 3px solid var(--primary); display: inline-block; padding-bottom: 5px; }
+        .about-content p { color: #555; line-height: 1.7; margin-bottom: 15px; font-size: 1.05rem; }
+        .about-image { flex: 1; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .about-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        /* Gallery Grid Update */
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .gallery-img { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.3s; cursor: pointer; }
+        .gallery-img:hover { transform: scale(1.03); }
+
+        /* Ratings / Testimonials Section */
+        .ratings-container { margin-bottom: 30px; }
+        .ratings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .rating-card { background: white; padding: 25px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-top: 4px solid var(--accent); position: relative; }
+        .rating-card i.fa-quote-left { font-size: 2rem; color: #ecf0f1; position: absolute; top: 15px; left: 15px; }
+        .stars { color: var(--gold); margin-bottom: 15px; font-size: 1.2rem; }
+        .rating-text { font-style: italic; color: #666; margin-bottom: 20px; line-height: 1.6; position: relative; z-index: 1; }
+        .rating-author { font-weight: bold; color: var(--dark); font-size: 1.1rem; }
+        .rating-role { color: var(--primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* --- FORMS & TABLES --- */
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+        .card-stat { background: white; padding: 25px 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); text-align: center; }
+        .card-stat h3 { font-size: 2rem; color: var(--dark); margin-bottom: 5px; }
+        .card-stat p { color: #7f8c8d; font-weight: 500; }
+        
+        .section { display: none; animation: fadeIn 0.4s ease-out; }
+        .section.active { display: block; }
+        .content-card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        .content-card h3, .content-card h4 { color: var(--dark); margin-bottom: 20px; }
+        
+        .student-form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; outline: none; transition: 0.3s; }
+        input:focus, select:focus { border-color: var(--primary); }
+        .btn { padding: 12px 20px; border: none; color: white; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn:hover { opacity: 0.9; }
+        .btn-add { background: var(--primary); }
+        .btn-del { background: var(--danger); font-size: 0.8rem; padding: 6px 12px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.95rem; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; color: #555; font-weight: 600; }
+        tr:hover { background: #fcfcfc; }
+
+        /* --- VISUAL BARS --- */
+        .bar-container { background: #eee; height: 12px; border-radius: 6px; overflow: hidden; margin-top: 8px; }
+        .bar-fill { height: 100%; background: var(--accent); transition: width 1s ease-in-out; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .about-section { flex-direction: column; }
+            .grid-4 { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="auth-overlay">
+        <div id="login-box" class="auth-box">
+            <h2><i class="fas fa-hand-holding-heart" style="color: var(--primary);"></i> NGO Admin</h2>
+            <p style="margin-bottom: 20px; color: #666;">Sign in to manage dashboard</p>
+            <input type="text" id="log-user" placeholder="Username (admin)">
+            <input type="password" id="log-pass" placeholder="Password (123)">
+            <button onclick="login()">Login to Dashboard</button>
+            <p id="auth-msg" style="color:red; margin-top:10px; font-size:0.9rem;"></p>
+            <span class="toggle-link" onclick="toggleAuth()">New NGO? Register Here</span>
+        </div>
+        <div id="reg-box" class="auth-box" style="display:none;">
+            <h2>Register NGO</h2>
+            <p style="margin-bottom: 20px; color: #666;">Create a new master account</p>
+            <input type="text" id="reg-user" placeholder="New Username">
+            <input type="password" id="reg-pass" placeholder="New Password">
+            <button onclick="register()">Create Account</button>
+            <span class="toggle-link" onclick="toggleAuth()">Back to Login</span>
+        </div>
+    </div>
+
+    <div id="app" style="display:none; width: 100%;">
+        
+        <div class="sidebar">
+            <div class="brand">
+                <i class="fas fa-dove"></i> HOPE FOUNDATION
+            </div>
+            <div class="menu">
+                <button onclick="nav('home')" class="active"><i class="fas fa-home"></i> Home Page</button>
+                <button onclick="nav('education')"><i class="fas fa-graduation-cap"></i> Education & Kids</button>
+                <button onclick="nav('donations')"><i class="fas fa-donate"></i> Donations & Funds</button>
+                <button onclick="nav('volunteers')"><i class="fas fa-users"></i> Volunteers</button>
+                <button onclick="nav('health')"><i class="fas fa-heartbeat"></i> Health & Nutrition</button>
+                <button onclick="nav('scholarships')"><i class="fas fa-certificate"></i> Scholarships</button>
+                <button onclick="nav('analytics')"><i class="fas fa-chart-line"></i> Analytics & Reports</button>
+                <button onclick="logout()" style="color: #e74c3c; margin-top: auto;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="header">
+                <h2 id="page-title">Home Dashboard</h2>
+                <div>
+                    <span style="margin-right: 15px;"><i class="fas fa-bell" style="color: #95a5a6;"></i></span>
+                    <strong>Welcome, Admin</strong>
+                </div>
+            </div>
+
+            <div id="home" class="section active">
+                
+                <div class="hero">
+                    <h1>Welcome to Hope Foundation</h1>
+                    <p>Empowering children, supporting education, and creating sustainable health programs to build a brighter future for the next generation.</p>
+                </div>
+
+                <div class="about-section">
+                    <div class="about-content">
+                        <h3>Our Mission & Vision</h3>
+                        <p>Since our inception, the Hope Foundation has been dedicated to eradicating poverty through education, healthcare, and community empowerment. We believe every child deserves a chance to learn and grow in a safe environment.</p>
+                        <p>Through our dedicated network of volunteers and generous donors, we provide school supplies, daily meals, medical checkups, and scholarships to underprivileged communities across the country.</p>
+                        <button class="btn btn-add" style="margin-top: 10px;" onclick="nav('analytics')">View Our Impact <i class="fas fa-arrow-right"></i></button>
+                    </div>
+                    <div class="about-image">
+                        <img src="https://images.unsplash.com/photo-1593113580326-9289fcb3c1d9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Children learning">
+                    </div>
+                </div>
+
+                <div class="grid-4">
+                    <div class="card-stat"> <h3>50+</h3> <p>Projects Done</p> </div>
+                    <div class="card-stat"> <h3>1,200+</h3> <p>Lives Impacted</p> </div>
+                    <div class="card-stat"> <h3>15</h3> <p>Awards Won</p> </div>
+                    <div class="card-stat"> <h3>10</h3> <p>Years Active</p> </div>
+                </div>
+
+                <div class="ratings-container content-card">
+                    <h3><i class="fas fa-star" style="color: var(--gold);"></i> What People Say About Us</h3>
+                    <div class="ratings-grid">
+                        <div class="rating-card">
+                            <i class="fas fa-quote-left"></i>
+                            <div class="stars">
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                            </div>
+                            <p class="rating-text">"Managing donations and seeing exactly where the funds go gives us immense peace of mind. Truly transparent."</p>
+                            <div class="rating-author">Sarah Jenkins</div>
+                            <div class="rating-role">Major Donor</div>
+                        </div>
+                        <div class="rating-card">
+                            <i class="fas fa-quote-left"></i>
+                            <div class="stars">
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
+                            </div>
+                            <p class="rating-text">"Volunteering here has been a life-changing experience. The management system makes scheduling so easy."</p>
+                            <div class="rating-author">David Chen</div>
+                            <div class="rating-role">Lead Volunteer</div>
+                        </div>
+                        <div class="rating-card">
+                            <i class="fas fa-quote-left"></i>
+                            <div class="stars">
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                            </div>
+                            <p class="rating-text">"Thanks to the scholarship tracking, we were able to guarantee my daughter's education for the next 4 years."</p>
+                            <div class="rating-author">Amina Yusuf</div>
+                            <div class="rating-role">Beneficiary Parent</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-card">
+                    <h3><i class="fas fa-images"></i> Field Work & Activities</h3>
+                    <p style="color: #666; margin-bottom: 15px;">A glimpse into our daily outreach programs and school events.</p>
+                    <div class="gallery-grid">
+                        <img src="https://images.unsplash.com/photo-1509062522246-3755977927d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" class="gallery-img">
+                        <img src="https://images.unsplash.com/photo-1529390079861-591de354f2f8?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" class="gallery-img">
+                        <img src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" class="gallery-img">
+                        <img src="https://images.unsplash.com/photo-1542810634-71277d95dcbb?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" class="gallery-img">
+                        <img src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" class="gallery-img">
+                        <img src="https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" class="gallery-img">
+                    </div>
+                </div>
+            </div>
+
+            <div id="education" class="section">
+                <div class="grid-4">
+                    <div class="card-stat"> <h3 id="edu-total">0</h3> <p>Total Students</p> </div>
+                    <div class="card-stat"> <h3 id="edu-present">0</h3> <p>Present Today</p> </div>
+                </div>
+
+                <div class="content-card">
+                    <h4><i class="fas fa-user-plus"></i> Add Child Record</h4>
+                    <p style="color:#777; font-size:0.9rem; margin-bottom:15px;">Child ID will be generated automatically upon saving.</p>
+                    
+                    <div class="student-form-grid">
+                        <input type="text" id="s-name" placeholder="Full Name">
+                        <input type="number" id="s-age" placeholder="Age">
+                        <select id="s-class">
+                            <option value="">Select Class</option>
+                            <option>Kindergarten</option>
+                            <option>Grade 1</option>
+                            <option>Grade 2</option>
+                            <option>Grade 3</option>
+                            <option>Grade 4</option>
+                            <option>Grade 5</option>
+                        </select>
+                        <input type="text" id="s-school" placeholder="School Name">
+                        <input type="text" id="s-guardian" placeholder="Guardian Name">
+                        <button class="btn btn-add" onclick="addStudent()"><i class="fas fa-plus"></i> Save Child Record</button>
+                    </div>
+                </div>
+
+                <div class="content-card">
+                    <h4>Registered Student Database</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Child ID</th>
+                                <th>Name</th>
+                                <th>Age</th>
+                                <th>School</th>
+                                <th>Class</th>
+                                <th>Guardian</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="donations" class="section">
+                <div class="grid-4">
+                    <div class="card-stat" style="border-top-color: var(--gold);"> <h3 id="don-total">$0</h3> <p>Total Funds Received</p> </div>
+                    <div class="card-stat" style="border-top-color: var(--gold);"> <h3 id="don-count">0</h3> <p>Total Donors</p> </div>
+                </div>
+                <div class="content-card">
+                    <h4>Record New Donation</h4>
+                    <div class="form-row">
+                        <input type="text" id="d-name" placeholder="Donor Full Name">
+                        <input type="number" id="d-amount" placeholder="Donation Amount ($)">
+                        <button class="btn btn-add" onclick="addDonation()"><i class="fas fa-hand-holding-usd"></i> Receive Fund</button>
+                    </div>
+                </div>
+                <div class="content-card">
+                    <h4>Recent Transactions</h4>
+                    <table>
+                        <thead><tr><th>Donor Name</th><th>Amount Donated</th><th>Date Received</th></tr></thead>
+                        <tbody id="donation-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="volunteers" class="section">
+                <div class="grid-4">
+                    <div class="card-stat" style="border-top-color: #9b59b6;"> <h3 id="vol-total">0</h3> <p>Active Volunteers</p> </div>
+                </div>
+                <div class="content-card">
+                    <h4>Register Volunteer</h4>
+                    <div class="form-row">
+                        <input type="text" id="v-name" placeholder="Volunteer Name">
+                        <input type="text" id="v-role" placeholder="Role (e.g. Teacher, Doctor, Event Staff)">
+                        <button class="btn btn-add" onclick="addVolunteer()"><i class="fas fa-user-check"></i> Register</button>
+                    </div>
+                </div>
+                <div class="content-card">
+                    <h4>Volunteer Directory</h4>
+                    <table>
+                        <thead><tr><th>Name</th><th>Assigned Role</th><th>Status</th></tr></thead>
+                        <tbody id="volunteer-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="health" class="section">
+                <div class="content-card">
+                    <h4>Health Checkup Entry</h4>
+                    <div class="form-row">
+                        <select id="h-student"> <option>Select Student</option> </select>
+                        <select id="h-status"> <option>Healthy</option> <option>Needs Attention</option> <option>Malnourished</option> </select>
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="h-note" placeholder="Doctor's Note / Vaccination Given">
+                        <button class="btn btn-add" onclick="addHealth()"><i class="fas fa-stethoscope"></i> Save Report</button>
+                    </div>
+                </div>
+                <div class="content-card">
+                    <h4>Health Checkup Logs</h4>
+                    <table class="table">
+                        <thead><tr><th>Child Name</th><th>Health Status</th><th>Medical Note</th><th>Date</th></tr></thead>
+                        <tbody id="health-table"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="scholarships" class="section">
+                 <div class="grid-4">
+                    <div class="card-stat" style="border-top-color: #e67e22;"> <h3 id="schol-total">0</h3> <p>Scholarships Awarded</p> </div>
+                </div>
+                <div class="content-card">
+                    <h4>Assign Scholarship</h4>
+                    <div class="form-row">
+                        <select id="sc-student"> <option>Select Student</option> </select>
+                        <input type="text" id="sc-sponsor" placeholder="Sponsor / Organization Name">
+                        <button class="btn btn-add" onclick="addScholarship()"><i class="fas fa-award"></i> Assign Scholarship</button>
+                    </div>
+                </div>
+                 <div class="content-card">
+                    <h4>Active Scholarships</h4>
+                    <table>
+                        <thead><tr><th>Student Name</th><th>Sponsored By</th><th>Status</th></tr></thead>
+                        <tbody id="scholarship-table"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="analytics" class="section">
+                <div class="content-card">
+                    <h4>Organization Overview & Goals</h4>
+                    <br>
+                    <p><strong>Fund Usage Goal ($50,000)</strong></p>
+                    <div class="bar-container"><div id="bar-funds" class="bar-fill" style="width: 0%; background: var(--gold);"></div></div>
+                    <br>
+                    <p><strong>Student Attendance Rate (Target 95%)</strong></p>
+                    <div class="bar-container"><div id="bar-att" class="bar-fill" style="width: 85%; background: var(--primary);"></div></div>
+                    <br>
+                    <p><strong>Health Program Coverage</strong></p>
+                    <div class="bar-container"><div id="bar-health" class="bar-fill" style="width: 0%; background: var(--danger);"></div></div>
+                </div>
+                <div class="content-card">
+                    <h4>Top Performing Students (Scholarship Holders)</h4>
+                    <ul id="top-students" style="list-style: none; padding: 10px; line-height: 2;"><li>No data yet...</li></ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- DATA STORE (LocalStorage) ---
+        const db = {
+            users: JSON.parse(localStorage.getItem('ngo_users')) || [{u:'admin', p:'123'}],
+            students: JSON.parse(localStorage.getItem('ngo_students')) || [],
+            donations: JSON.parse(localStorage.getItem('ngo_donations')) || [],
+            volunteers: JSON.parse(localStorage.getItem('ngo_volunteers')) || [],
+            health: JSON.parse(localStorage.getItem('ngo_health')) || [],
+            scholarships: JSON.parse(localStorage.getItem('ngo_scholarships')) || []
+        };
+
+        const save = () => {
+            localStorage.setItem('ngo_users', JSON.stringify(db.users));
+            localStorage.setItem('ngo_students', JSON.stringify(db.students));
+            localStorage.setItem('ngo_donations', JSON.stringify(db.donations));
+            localStorage.setItem('ngo_volunteers', JSON.stringify(db.volunteers));
+            localStorage.setItem('ngo_health', JSON.stringify(db.health));
+            localStorage.setItem('ngo_scholarships', JSON.stringify(db.scholarships));
+            renderAll();
+        };
+
+        // --- AUTHENTICATION ---
+        function toggleAuth() {
+            const login = document.getElementById('login-box');
+            const reg = document.getElementById('reg-box');
+            if(login.style.display === 'none') { login.style.display='block'; reg.style.display='none'; }
+            else { login.style.display='none'; reg.style.display='block'; }
+        }
+
+        function register() {
+            const u = document.getElementById('reg-user').value;
+            const p = document.getElementById('reg-pass').value;
+            if(u && p) {
+                db.users.push({u, p}); save(); alert('Registered! Please Login.'); toggleAuth();
+            }
+        }
+
+        function login() {
+            const u = document.getElementById('log-user').value;
+            const p = document.getElementById('log-pass').value;
+            const valid = db.users.find(user => user.u === u && user.p === p);
+            if(valid) {
+                document.getElementById('auth-overlay').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+                renderAll();
+            } else {
+                document.getElementById('auth-msg').innerText = "Invalid Credentials";
+            }
+        }
+
+        function logout() { location.reload(); }
+
+        // --- NAVIGATION ---
+        function nav(sectionId) {
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            
+            document.querySelectorAll('.menu button').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            if(sectionId === 'health' || sectionId === 'scholarships') populateDropdowns();
+            if(sectionId === 'analytics') renderAnalytics();
+            
+            document.getElementById('page-title').innerText = sectionId === 'home' ? 'Home Dashboard' : sectionId.charAt(0).toUpperCase() + sectionId.slice(1) + " Dashboard";
+        }
+
+        // --- 1. EDUCATION LOGIC ---
+        function addStudent() {
+            const name = document.getElementById('s-name').value;
+            const age = document.getElementById('s-age').value;
+            const cls = document.getElementById('s-class').value;
+            const school = document.getElementById('s-school').value;
+            const guardian = document.getElementById('s-guardian').value;
+
+            if(name && cls) {
+                const childId = "NGO-" + Math.floor(1000 + Math.random() * 9000);
+                db.students.push({ id: childId, name, age, class: cls, school, guardian });
+                save();
+                
+                document.getElementById('s-name').value = '';
+                document.getElementById('s-age').value = '';
+                document.getElementById('s-school').value = '';
+                document.getElementById('s-guardian').value = '';
+                alert("Child Added Successfully with ID: " + childId);
+            } else {
+                alert("Please fill in at least Name and Class");
+            }
+        }
+
+        // --- 2. DONATION LOGIC ---
+        function addDonation() {
+            const name = document.getElementById('d-name').value;
+            const amount = document.getElementById('d-amount').value;
+            if(name && amount) {
+                db.donations.push({ name, amount: parseInt(amount), date: new Date().toLocaleDateString() });
+                save();
+                document.getElementById('d-name').value = ''; document.getElementById('d-amount').value = '';
+            }
+        }
+
+        // --- 3. VOLUNTEER LOGIC ---
+        function addVolunteer() {
+            const name = document.getElementById('v-name').value;
+            const role = document.getElementById('v-role').value;
+            if(name) { 
+                db.volunteers.push({ name, role, status: 'Active' }); 
+                save(); 
+                document.getElementById('v-name').value = '';
+                document.getElementById('v-role').value = '';
+            }
+        }
+
+        // --- 4 & 5. HEALTH & SCHOLARSHIP HELPERS ---
+        function populateDropdowns() {
+            const opts = db.students.map(s => `<option value="${s.name}">${s.name} (ID: ${s.id})</option>`).join('');
+            document.getElementById('h-student').innerHTML = opts || '<option>No students found</option>';
+            document.getElementById('sc-student').innerHTML = opts || '<option>No students found</option>';
+        }
+
+        function addHealth() {
+            const s = document.getElementById('h-student').value;
+            const stat = document.getElementById('h-status').value;
+            const note = document.getElementById('h-note').value;
+            if(s !== 'Select Student' && s !== 'No students found') {
+                db.health.push({ s, stat, note, date: new Date().toLocaleDateString() });
+                save();
+                document.getElementById('h-note').value = '';
+            }
+        }
+
+        function addScholarship() {
+            const s = document.getElementById('sc-student').value;
+            const sp = document.getElementById('sc-sponsor').value;
+            if(s !== 'Select Student' && s !== 'No students found' && sp) {
+                db.scholarships.push({ s, sp, status: 'Active' });
+                save();
+                document.getElementById('sc-sponsor').value = '';
+            }
+        }
+
+        // --- RENDER FUNCTIONS ---
+        function renderAll() {
+            // Education
+            document.getElementById('edu-total').innerText = db.students.length;
+            document.getElementById('student-list').innerHTML = db.students.map(s => 
+                `<tr>
+                    <td><strong>${s.id}</strong></td>
+                    <td>${s.name}</td>
+                    <td>${s.age || '-'}</td>
+                    <td>${s.school || '-'}</td>
+                    <td>${s.class}</td>
+                    <td>${s.guardian || '-'}</td>
+                    <td><button class="btn-del" onclick="del('students','${s.id}')"><i class="fas fa-trash"></i></button></td>
+                </tr>`
+            ).join('');
+
+            // Donations
+            const totalFunds = db.donations.reduce((sum, d) => sum + d.amount, 0);
+            document.getElementById('don-total').innerText = "$" + totalFunds.toLocaleString();
+            document.getElementById('don-count').innerText = db.donations.length;
+            document.getElementById('donation-list').innerHTML = db.donations.map(d => 
+                `<tr><td>${d.name}</td><td>$${d.amount.toLocaleString()}</td><td>${d.date}</td></tr>`
+            ).join('');
+
+            // Volunteers
+            document.getElementById('vol-total').innerText = db.volunteers.length;
+            document.getElementById('volunteer-list').innerHTML = db.volunteers.map((v, i) => 
+                `<tr><td>${v.name}</td><td>${v.role}</td><td><span style="color:var(--primary); font-weight:bold;"><i class="fas fa-circle" style="font-size:0.6rem; vertical-align:middle; margin-right:5px;"></i>${v.status}</span></td></tr>`
+            ).join('');
+
+            // Health
+            document.getElementById('health-table').innerHTML = db.health.map(h => {
+                let color = h.stat === 'Healthy' ? 'var(--primary)' : (h.stat === 'Malnourished' ? 'var(--danger)' : '#e67e22');
+                return `<tr><td>${h.s}</td><td style="color:${color}; font-weight:bold;">${h.stat}</td><td>${h.note}</td><td>${h.date}</td></tr>`
+            }).join('');
+
+            // Scholarships
+            document.getElementById('schol-total').innerText = db.scholarships.length;
+            document.getElementById('scholarship-table').innerHTML = db.scholarships.map(sc => 
+                `<tr><td>${sc.s}</td><td>${sc.sp}</td><td><span style="background:var(--primary); color:white; padding: 4px 10px; border-radius:12px; font-size:0.8rem;">Active</span></td></tr>`
+            ).join('');
+        }
+
+        function renderAnalytics() {
+            const totalFunds = db.donations.reduce((sum, d) => sum + d.amount, 0);
+            document.getElementById('bar-funds').style.width = Math.min((totalFunds / 50000) * 100, 100) + "%";
+            
+            const healthCoverage = db.students.length > 0 ? (db.health.length / db.students.length) * 100 : 0;
+            document.getElementById('bar-health').style.width = Math.min(healthCoverage, 100) + "%";
+            
+            const list = db.scholarships.length > 0 ? db.scholarships.map(s => `<li><i class="fas fa-medal" style="color:var(--gold); margin-right:10px;"></i> <strong>${s.s}</strong> (Sponsored by: ${s.sp})</li>`).join('') : '<li>No scholarship records yet...</li>';
+            document.getElementById('top-students').innerHTML = list;
+        }
+
+        function del(type, id) {
+            if(confirm("Are you sure you want to delete this record?")) {
+                db[type] = db[type].filter(item => item.id !== id);
+                save();
+            }
+        }
+    </script>
+</body>
+</html>
